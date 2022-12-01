@@ -1,0 +1,113 @@
+setwd("C:/Users/danie/Desktop/Processing and analysis of biological data/Exercises/04_Multiple regression and ANCOVA")
+plants <- read.csv("alpineplants.csv")
+library(ggplot2)
+library(MASS)
+library(patchwork)
+
+#Data summary
+View(plants)
+hist(plants$Carex.bigelowii)
+hist(plants$Thalictrum.alpinum)
+mean(plants$Thalictrum.alpinum)
+mean(plants$Carex.bigelowii)
+SE <- function(x) sd(x) / sqrt(length(x))
+SE(plants$Thalictrum.alpinum)
+SE(plants$Carex.bigelowii)
+
+summary(plants$min_T_winter, na.rm = T)
+length(plants$min_T_winter)
+summary(plants$max_T_summer, na.rm = T)
+length(plants$max_T_summer)
+summary(plants$altitude, na.rm = T)
+length(plants$altitude)
+summary(plants$snow, na.rm = T)
+length(plants$snow)
+
+#GLM Cb
+glm_pois_Cb <- glm(Carex.bigelowii ~ min_T_winter + max_T_summer + snow + altitude, 
+                   family = "poisson", data = plants) 
+
+glm_nb_Cb = glm.nb(Carex.bigelowii ~ min_T_winter + max_T_summer + altitude + snow, 
+              data = plants)
+summary(glm_nb_Cb)
+exp(summary(glm_nb_Cb)$coef)
+
+#GLM Ta
+glm_pois_Ta <- glm(Thalictrum.alpinum ~ min_T_winter + max_T_summer + snow + altitude, 
+                   family = "poisson", data = plants) 
+summary(glm_pois_Ta)
+
+glm_nb_Ta = glm.nb(Thalictrum.alpinum ~ min_T_winter + max_T_summer + altitude + snow, 
+              data = plants)
+summary(glm_nb_Ta)
+exp(summary(glm_nb_Ta)$coef)
+
+#Testing for multicorineality
+lm1 = lm(min_T_winter ~ max_T_summer, 
+              data = plants)
+1/(1-(summary(lm1)$r.squared))
+
+lm2 = lm(min_T_winter ~ snow, 
+         data = plants)
+1/(1-(summary(lm2)$r.squared))
+
+lm2 = lm(max_T_summer ~ snow, 
+         data = plants)
+1/(1-(summary(lm2)$r.squared))
+
+lm2 = lm(max_T_summer ~ altitude, 
+         data = plants)
+1/(1-(summary(lm2)$r.squared))
+
+lm2 = lm(min_T_winter ~ altitude, 
+         data = plants)
+1/(1-(summary(lm2)$r.squared))
+
+lm2 = lm(snow ~ altitude, 
+         data = plants)
+1/(1-(summary(lm2)$r.squared))
+
+#Figure 1
+Cb1 <- ggplot(plants, aes(x = min_T_winter, y = Carex.bigelowii)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") +
+  labs(x = "Min. temperature winter [°C]", y = "Carex bigelowii [abundance]") +
+  scale_y_continuous(breaks = c(0, 3, 6, 9), limits = c(0, 10))
+Cb2 <- ggplot(plants, aes(x = max_T_summer, y = Carex.bigelowii)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") +
+  labs(x = "Max. temperature summer [°C]", y = NULL) +
+  scale_y_continuous(breaks = c(0, 3, 6, 9), limits = c(0, 10))
+Cb3 <- ggplot(plants, aes(x = altitude, y = Carex.bigelowii)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") +
+  labs(x = "Altitude [m]", y = "Carex bigelowii [abundance]") +
+  scale_y_continuous(breaks = c(0, 3, 6, 9), limits = c(0, 10)) 
+Cb4 <- ggplot(plants, aes(x = snow, y = Carex.bigelowii)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") + 
+  labs(x = "Snow cover [cm]", y = NULL) +
+  scale_y_continuous(breaks = c(0, 3, 6, 9), limits = c(0, 10))
+fig1 <- (Cb1 + Cb2 + Cb3 + Cb4)
+fig1 <- fig1 + plot_annotation(tag_levels = "A") #adds letters to each plot
+fig1
+ggsave("Fig1.png", dpi = 600, width = 7, height = 5, bg = NULL, plot = fig1)
+
+
+#Figure 2
+Ta1 <- ggplot(plants, aes(x = min_T_winter, y = Thalictrum.alpinum)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") +
+  labs(x = "Min. temperature winter [°C]", y = "Thalictrum alpinum [abundance]") +
+  scale_y_continuous(breaks = c(0, 10, 20), limits = c(0, 25))
+Ta2 <- ggplot(plants, aes(x = max_T_summer, y = Thalictrum.alpinum)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") +
+  labs(x = "Max. temperature summer [°C]", y = NULL) +
+  scale_y_continuous(breaks = c(0, 10, 20), limits = c(0, 25))
+Ta3 <- ggplot(plants, aes(x = altitude, y = Thalictrum.alpinum)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") +
+  labs(x = "Altitude [m]", y = "Thalictrum alpinum [abundance]") +
+  scale_y_continuous(breaks = c(0, 10, 20), limits = c(0, 25)) 
+Ta4 <- ggplot(plants, aes(x = snow, y = Thalictrum.alpinum)) + geom_point(alpha = 0.7, size = 1.9) + theme_minimal() +
+  geom_smooth(method = "glm.nb", se = F, col = "black") + 
+  labs(x = "Snow cover [cm]", y = NULL) +
+  scale_y_continuous(breaks = c(0, 10, 20), limits = c(0, 25))
+fig2 <- (Ta1 + Ta2 + Ta3 + Ta4)
+fig2 <- fig2 + plot_annotation(tag_levels = "A") #adds letters to each plot
+fig2
+ggsave("Fig2.png", dpi = 600, width = 7, height = 5, bg = NULL, plot = fig2)
